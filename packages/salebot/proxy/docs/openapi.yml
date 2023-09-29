@@ -1,0 +1,197 @@
+openapi: 3.1.0
+
+info:
+  title: constructor proxy
+  version: 1.0.0
+
+paths:
+  /:
+    post:
+      description: |
+        Метод валидирует клиентский запрос, собирает POST request и отправляет его на адрес указанный из переменной окружения `${CONSTRUCTOR_URL}`
+        - Отправляемый request собирается в соответствии с контрактом метода `/api/#{api_key}/tg_callback`
+        - Поле `user_id` берётся из поля `$.init.user.id` клиентского запроса
+        - Поле `group_id` из `$.group_id` клиентского запроса
+        - Поле `message` из `$.message` клиентского запроса
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              $ref: '#/components/schemas/RootRequest'
+      responses:
+        200:
+          description: |
+            Валидация пользовательских данных прошла удачна.  
+            Сторонний сервис принял запрос и вернул `200 OK`.
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/RootResponse'
+        400:
+          description: |
+            Ошибка валидации клиентских данных, может возникнуть в таких случаях:
+            - В поле `$.init` не валидная строка;
+            - В поле `$.init.user` не валидные типы данных;
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/RootResponseClientError'
+                properties:
+                  message:
+                    type: string
+                    example: 'json: cannot unmarshal bool into Go struct field TelegramUser.id of type int'
+        403:
+          description: |
+            Валидация пользовательских данных не проходит проверку, проверочная сумма не совпадает.
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/RootResponseClientError'
+                properties:
+                  message:
+                    example: 'Access denied'
+        500:
+          description: |
+            При формировании запроса или при его отправке возникла проблема которую сложно было спрогнозировать, возможные случаи:
+            - Данные не валидны для формирования json;
+            - Проблема с данными при формировании запроса в сторонний сервис;
+            - Сторонний сервис вернул данные которые не возможно прочитать;
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/RootResponseServerError'
+                properties:
+                  message:
+                    example: 'internal problem'
+        502:
+          description: |
+            Сторонний сервис не доступен.
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/RootResponseClientError'
+                properties:
+                  message:
+                    example: 'Connection refused'
+        default:
+          description: |
+            Сторонний сервис принял запрос, но вернул статус отличающийся от статуса `200 OK`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: not_ok
+                  data:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/TgCallbackResponse'
+
+  /api/#{api_key}/tg_callback:
+    parameters:
+      - $ref: '#/components/parameters/ApiKey'
+    post:
+      description: |
+        Метод который мы используем как контракт при отправки запроса в сторонний сервис.
+        
+        Документация метода находится по ссылке https://docs.salebot.pro/api-v-konstruktore-salebot.pro/api-konstruktora .
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              $ref: '#/components/schemas/TgCallbackRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/TgCallbackResponse'
+
+components:
+  schemas:
+    RootRequest:
+      type: object
+      required:
+        - init
+        - message
+        - group_id
+      properties:
+        init:
+          type: string
+        message:
+          type: string
+        group_id:
+          type: string
+
+    RootResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        data:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TgCallbackResponse'
+
+    RootResponseClientError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+
+    RootResponseServerError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TgCallbackResponse'
+
+    TgCallbackRequest:
+      type: object
+      required:
+        - user_id
+        - message
+        - group_id
+      properties:
+        user_id:
+          type: string
+        message:
+          type: string
+        group_id:
+          type: string
+
+    TgCallbackResponse:
+      type: object
+      additionalProperties: true
+
+  parameters:
+    ApiKey:
+      name: api_key
+      in: path
+      required: true
+      schema:
+        type: string
