@@ -31,6 +31,10 @@ jobs:
 
       - run: go vet ./packages/salebot/proxy/
 
+      - uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
       - name: Go test
         run: >
           GORACE="atexit_sleep_ms=0" go test 
