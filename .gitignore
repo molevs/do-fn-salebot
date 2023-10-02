@@ -1,3 +1,5 @@
-.deployed
 /**/.env
+.deployed
+.cache
 .coverage.txt
+/packages/salebot/proxy/main.go

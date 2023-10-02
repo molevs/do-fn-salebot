@@ -152,7 +152,7 @@ func TestLogger_log(t *testing.T) {
 		re := regexp.MustCompile(`\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ(\d\d:\d\d)*`)
 		actual := re.ReplaceAll(buffer.Bytes(), []byte("__time__"))
 
-		expected := fmt.Sprint("> request id: 123456; time: __time__; message: message 1; message 2;\n")
+		expected := "> request id: 123456; time: __time__; message: message 1; message 2;\n"
 
 		assert.Equal(t, expected, string(actual))
 	})
@@ -769,6 +769,7 @@ func Test_Main_integrate(t *testing.T) {
 			name: "200 OK",
 			args: args{
 				ctx: func() context.Context {
+					// nolint:staticcheck
 					return context.WithValue(context.Background(), "request_id", "12345")
 				},
 				event: Event{
@@ -799,6 +800,7 @@ func Test_Main_integrate(t *testing.T) {
 			name: "400 Bad Request. $.init not valid",
 			args: args{
 				ctx: func() context.Context {
+					// nolint:staticcheck
 					return context.WithValue(context.Background(), "request_id", "12345")
 				},
 				event: Event{
@@ -824,6 +826,7 @@ func Test_Main_integrate(t *testing.T) {
 			name: "400 Bad Request. Error json parsing",
 			args: args{
 				ctx: func() context.Context {
+					// nolint:staticcheck
 					return context.WithValue(context.Background(), "request_id", "12345")
 				},
 				event: Event{
@@ -849,6 +852,7 @@ func Test_Main_integrate(t *testing.T) {
 			name: "403 Forbidden",
 			args: args{
 				ctx: func() context.Context {
+					// nolint:staticcheck
 					return context.WithValue(context.Background(), "request_id", "12345")
 				},
 				event: Event{
@@ -874,6 +878,7 @@ func Test_Main_integrate(t *testing.T) {
 			name: "502 BadGateway. Like connection refused",
 			args: args{
 				ctx: func() context.Context {
+					// nolint:staticcheck
 					return context.WithValue(context.Background(), "request_id", "12345")
 				},
 				event: Event{
@@ -900,6 +905,7 @@ func Test_Main_integrate(t *testing.T) {
 			name: "Status code != 200",
 			args: args{
 				ctx: func() context.Context {
+					// nolint:staticcheck
 					return context.WithValue(context.Background(), "request_id", "12345")
 				},
 				event: Event{
